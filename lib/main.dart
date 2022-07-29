@@ -2,56 +2,117 @@
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 
-
 // ejecuta la app
-void main() => runApp(MiPrimeraApp());
-
-
-
+void main() {
+  runApp(MiPrimeraApp());
+}
 
 // StatelessWidget es inmutable no puedo cambiar sus propiedades
 class MiPrimeraApp extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title:  'Welcome to Flutter',
-
-      home: RandomWords(),
+      // MODIFY with const
+      title: 'Mi primera App Flutter Demo',
+      theme: ThemeData(
+        // Add the 5 lines from here...
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+        ),
+      ),
+      home: const RandomWords(),
     );
   }
+// #enddocregion build
 }
 
 class RandomWordsState extends State<RandomWords> {
   final _suggestions = <WordPair>[];
+  final _saved = <WordPair>{}; // NEW
   final _biggerFont = const TextStyle(fontSize: 18.0);
+  // #docregion RWS-build
   @override
   Widget build(BuildContext context) {
+    // #docregion itemBuilder
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Startup Name Generator'),
-      ),
-      body: _buildSuggestions(),
-    );
-  }
-  Widget _buildSuggestions() {
-    return ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemBuilder: /*1*/ (context, i) {
-          if (i.isOdd) return Divider(); /*2*/
+        // NEW from here ...
+        appBar: AppBar(
+          title: const Text('Mi primera App Flutter Demo'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.list),
+              onPressed: _pushSaved,
+              tooltip: 'Saved Suggestions',
+            ),
+          ],
+        ),
+        body: ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemBuilder: /*1*/ (context, i) {
+              if (i.isOdd) return const Divider();
+              /*2*/
 
-          final index = i ~/ 2; /*3*/
-          if (index >= _suggestions.length) {
-            _suggestions.addAll(generateWordPairs().take(10)); /*4*/
-          }
-          return _buildRow(_suggestions[index]);
-        });
+              final index = i ~/ 2; /*3*/
+              if (index >= _suggestions.length) {
+                _suggestions.addAll(generateWordPairs().take(10)); /*4*/
+              }
+
+              final alreadySaved = _saved.contains(_suggestions[index]);
+
+              // #docregion listTile
+              return ListTile(
+                title: Text(
+                  _suggestions[index].asPascalCase,
+                  style: _biggerFont,
+                ),
+                trailing: Icon(
+                  alreadySaved ? Icons.favorite : Icons.favorite_border,
+                  color: alreadySaved ? Colors.red : null,
+                  semanticLabel: alreadySaved ? 'Remove from saved' : 'Save',
+                ),
+                onTap: () {
+                  // NEW from here ...
+                  setState(() {
+                    if (alreadySaved) {
+                      _saved.remove(_suggestions[index]);
+                    } else {
+                      _saved.add(_suggestions[index]);
+                    }
+                  }); // to here.
+                },
+              );
+            }));
   }
-  Widget _buildRow(WordPair pair) {
-    return ListTile(
-      title: Text(
-        pair.asPascalCase,
-        style: _biggerFont,
+
+  void _pushSaved() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) {
+          final tiles = _saved.map(
+            (pair) {
+              return ListTile(
+                title: Text(
+                  pair.asPascalCase,
+                  style: _biggerFont,
+                ),
+              );
+            },
+          );
+          final divided = tiles.isNotEmpty
+              ? ListTile.divideTiles(
+                  context: context,
+                  tiles: tiles,
+                ).toList()
+              : <Widget>[];
+
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('Saved Suggestions'),
+            ),
+            body: ListView(children: divided),
+          );
+        },
       ),
     );
   }
